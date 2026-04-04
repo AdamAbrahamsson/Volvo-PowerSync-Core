@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: simulator-service
+
+simulator:
+  tick-interval-ms: 1000
+
+logging:
+  level:
+    com.volvo.powersync.simulator: INFO
