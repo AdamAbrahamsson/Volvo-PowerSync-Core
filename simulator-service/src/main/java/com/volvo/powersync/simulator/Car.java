@@ -1,16 +1,15 @@
-package com.volvo.powersync.simulator.domain;
+package com.volvo.powersync.simulator;
 
 import java.util.Objects;
 
-/**
- * In-memory vehicle model. {@code vin} is the primary key.
- */
+/** In-memory car: VIN is the id; battery and state change each tick. */
 public final class Car {
 
     private final String vin;
     private volatile int batteryPercentage;
     private volatile CarState state;
     private volatile String assignedChargingStationId;
+    private volatile boolean lowBatteryBookingAttempted;
 
     public Car(String vin, int batteryPercentage, CarState state, String assignedChargingStationId) {
         this.vin = Objects.requireNonNull(vin, "vin");
@@ -19,9 +18,7 @@ public final class Car {
         this.assignedChargingStationId = assignedChargingStationId;
     }
 
-    /**
-     * New vehicles start in {@link CarState#DRIVING} with no assigned charging station.
-     */
+    /** New cars start driving with no charging station. */
     public static Car create(String vin, int batteryPercentage) {
         return new Car(vin, batteryPercentage, CarState.DRIVING, null);
     }
@@ -50,13 +47,27 @@ public final class Car {
         this.assignedChargingStationId = assignedChargingStationId;
     }
 
-    /**
-     * Applies one simulation tick for this car based on its current {@link CarState}.
-     * When driving, battery drops by exactly 1 point (e.g. 50% → 49%). Bounds only apply at 0% / 100%.
-     */
+    public boolean isLowBatteryBookingAttempted() {
+        return lowBatteryBookingAttempted;
+    }
+
+    public void markLowBatteryBookingAttempted() {
+        lowBatteryBookingAttempted = true;
+    }
+
+    public void clearLowBatteryBookingAttempted() {
+        lowBatteryBookingAttempted = false;
+    }
+
+    /** One simulation step: battery up/down depends on {@link #state()}. */
     public void applyBatteryTick() {
         switch (state) {
-            case DRIVING -> batteryPercentage = Math.max(0, batteryPercentage - 1);
+            case DRIVING -> {
+                batteryPercentage = Math.max(0, batteryPercentage - 5);
+                if (batteryPercentage == 0) {
+                    state = CarState.STOPPED;
+                }
+            }
             case CHARGING -> batteryPercentage = Math.min(100, batteryPercentage + 2);
             case STOPPED, WAITING_FOR_CHARGE -> {
                 // no change

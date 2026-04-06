@@ -1,6 +1,5 @@
-package com.volvo.powersync.simulator.service;
+package com.volvo.powersync.simulator;
 
-import com.volvo.powersync.simulator.domain.Car;
 import jakarta.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.Collections;
@@ -10,10 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
-/**
- * In-memory store for up to 10 vehicles. Fleet entries are keyed by model slot (ex30, ex40, …);
- * each {@link Car} carries a 4-digit VIN. Initially seeds four cars with battery between 30% and 70%.
- */
+/** In-memory fleet: keys ex30 / ex40 / …, each car has a 4-digit VIN. */
 @Component
 public class CarFleetRegistry {
 

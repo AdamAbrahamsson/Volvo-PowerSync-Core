@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: powersync
+      POSTGRES_USER: powersync
+      POSTGRES_PASSWORD: powersync
+    ports:
+      - "5432:5432"

@@ -1,0 +1,69 @@
+package com.volvo.powersync.booking;
+
+import java.util.List;
+import java.util.Optional;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * All database logic for “give me one free charging station” lives here.
+ * The gRPC class only talks to the outside world; this class talks to PostgreSQL.
+ */
+@Service
+public class StationBooker {
+
+    private final ChargingStationRepository stations;
+
+    public StationBooker(ChargingStationRepository stations) {
+        this.stations = stations;
+    }
+
+    /**
+     * Tries to book one free station for the given car.
+     *
+     * @return the station database id as text, or null if every station is already BOOKED
+     */
+    @Transactional
+    public String tryBookOneFreeStation(String vin) {
+        List<ChargingStation> freeStations = stations.findTop1ByStateOrderByIdAsc(StationState.FREE);
+
+        if (freeStations.isEmpty()) {
+            return null;
+        }
+
+        ChargingStation station = freeStations.get(0);
+        station.setState(StationState.BOOKED);
+        station.setAssignedVin(vin);
+        stations.save(station);
+
+        return String.valueOf(station.getId());
+    }
+
+    /**
+     * Frees the station if it is booked by this VIN. Otherwise does nothing and returns false.
+     */
+    @Transactional
+    public boolean releaseStation(String vin, String stationIdText) {
+        long id;
+        try {
+            id = Long.parseLong(stationIdText);
+        } catch (NumberFormatException e) {
+            return false;
+        }
+        Optional<ChargingStation> locked = stations.findByIdWithLock(id);
+        if (locked.isEmpty()) {
+            return false;
+        }
+        ChargingStation station = locked.get();
+        if (station.getState() != StationState.BOOKED) {
+            return false;
+        }
+        if (station.getAssignedVin() == null || !station.getAssignedVin().equals(vin)) {
+            return false;
+        }
+        station.setState(StationState.FREE);
+        station.setAssignedVin(null);
+        stations.save(station);
+        return true;
+    }
+}

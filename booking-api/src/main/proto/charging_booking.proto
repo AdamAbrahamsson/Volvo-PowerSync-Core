@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+// Java classes (BookChargingReply, ChargingBookingGrpc, …) are GENERATED at build time — there is no
+// src/main/java/com/volvo/powersync/grpc folder in git. After: mvn -pl booking-api compile
+// they appear under: booking-api/target/generated-sources/protobuf/java/.../grpc/booking/
+
+package volvo.powersync.booking;
+
+option java_multiple_files = true;
+option java_package = "com.volvo.powersync.grpc.booking";
+option java_outer_classname = "ChargingBookingProto";
+
+service ChargingBooking {
+  rpc BookChargingStation (BookChargingRequest) returns (BookChargingReply);
+  rpc ReleaseChargingStation (ReleaseChargingRequest) returns (ReleaseChargingReply);
+}
+
+message BookChargingRequest {
+  string vin = 1;
+}
+
+message BookChargingReply {
+  bool success = 1;
+  string charging_station_id = 2;
+  string message = 3;
+}
+
+message ReleaseChargingRequest {
+  string vin = 1;
+  string charging_station_id = 2;
+}
+
+message ReleaseChargingReply {
+  bool success = 1;
+  string message = 2;
+}

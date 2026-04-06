@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: booking-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/powersync
+    username: powersync
+    password: powersync
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+
+grpc:
+  server:
+    port: 9090
+
+logging:
+  level:
+    com.volvo.powersync.booking: INFO
+    net.devh.boot.grpc: INFO
