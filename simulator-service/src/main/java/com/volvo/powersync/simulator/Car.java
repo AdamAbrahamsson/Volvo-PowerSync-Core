@@ -73,7 +73,7 @@ public final class Car {
     public void applyBatteryTick() {
         switch (state) {
             case DRIVING -> {
-                batteryPercentage = Math.max(0, batteryPercentage - 5);
+                batteryPercentage = Math.max(0, batteryPercentage - 2);
                 if (batteryPercentage == 0) {
                     state = CarState.STOPPED;
                 }
