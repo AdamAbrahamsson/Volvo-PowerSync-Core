@@ -1,7 +1,3 @@
-const apiBaseInput = document.getElementById("apiBaseUrl");
-const bookingApiBaseInput = document.getElementById("bookingApiBaseUrl");
-const notificationApiBaseInput = document.getElementById("notificationApiBaseUrl");
-const loadCarsButton = document.getElementById("loadCarsButton");
 const vipCarSelect = document.getElementById("vipCarSelect");
 const bookVipButton = document.getElementById("bookVipButton");
 const stationsStatus = document.getElementById("stationsStatus");
@@ -9,6 +5,10 @@ const vipResult = document.getElementById("vipResult");
 const carsContainer = document.getElementById("carsContainer");
 const errorBox = document.getElementById("error");
 let stationStatusEventSource = null;
+let stationNamesById = new Map();
+const API_BASE_URL = "http://localhost:8080";
+const BOOKING_API_BASE_URL = "http://localhost:8081";
+const NOTIFICATION_API_BASE_URL = "http://localhost:8082";
 
 function clearError() {
   errorBox.textContent = "";
@@ -16,18 +16,6 @@ function clearError() {
 
 function showError(message) {
   errorBox.textContent = message;
-}
-
-function apiBaseUrl() {
-  return apiBaseInput.value.trim().replace(/\/+$/, "");
-}
-
-function bookingApiBaseUrl() {
-  return bookingApiBaseInput.value.trim().replace(/\/+$/, "");
-}
-
-function notificationApiBaseUrl() {
-  return notificationApiBaseInput.value.trim().replace(/\/+$/, "");
 }
 
 function carStatusDotClass(status) {
@@ -79,8 +67,35 @@ function carImageDataUrl(car) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
+function candidateCarImagePaths(vin) {
+  return [
+    `./assets/cars/${vin}.png`,
+    `./assets/cars/${vin}.jpg`,
+    `./assets/cars/${vin}.jpeg`,
+    `./assets/cars/${vin}.webp`,
+    `./assets/cars/${vin.toLowerCase()}.png`,
+    `./assets/cars/${vin.toLowerCase()}.jpg`,
+    `./assets/cars/${vin.toLowerCase()}.jpeg`,
+    `./assets/cars/${vin.toLowerCase()}.webp`
+  ];
+}
+
+function resolveLocalCarImage(car) {
+  return candidateCarImagePaths(car.vin)[0];
+}
+
+function stationLabel(stationId) {
+  if (!stationId) return "None";
+  return stationNamesById.get(String(stationId)) ?? stationId;
+}
+
 function renderStationsStatus(stations) {
   stationsStatus.innerHTML = "";
+  stationNamesById = new Map(
+    stations
+      .filter((station) => station.stationId && station.stationName)
+      .map((station) => [String(station.stationId), station.stationName])
+  );
   const sorted = [...stations].sort((a, b) => {
     if (a.stationType === b.stationType) {
       return a.stationName.localeCompare(b.stationName);
@@ -94,7 +109,7 @@ function renderStationsStatus(stations) {
     const isFree = station.status === "FREE";
     const dotClass = isFree ? "green" : "red";
     const card = document.createElement("article");
-    card.className = "station-card";
+    card.className = `station-card ${station.stationType === "VIP" ? "vip-station-card" : ""}`;
     card.innerHTML = `
       <h3 class="station-name">${station.stationName}</h3>
       <div><strong>Type:</strong> ${station.stationType}</div>
@@ -107,7 +122,7 @@ function renderStationsStatus(stations) {
 
 async function loadInitialStationsStatus() {
   try {
-    const response = await fetch(`${notificationApiBaseUrl()}/api/stations-status`);
+    const response = await fetch(`${NOTIFICATION_API_BASE_URL}/api/stations-status`);
     if (!response.ok) {
       throw new Error(`Failed to load station status (${response.status})`);
     }
@@ -121,7 +136,7 @@ function connectStationStream() {
   if (stationStatusEventSource) {
     stationStatusEventSource.close();
   }
-  stationStatusEventSource = new EventSource(`${notificationApiBaseUrl()}/api/stations-status/stream`);
+  stationStatusEventSource = new EventSource(`${NOTIFICATION_API_BASE_URL}/api/stations-status/stream`);
   stationStatusEventSource.addEventListener("station-status", (event) => {
     try {
       renderStationsStatus(JSON.parse(event.data));
@@ -138,7 +153,7 @@ async function loadCars() {
   clearError();
   carsContainer.innerHTML = "Loading cars...";
   try {
-    const response = await fetch(`${apiBaseUrl()}/api/cars`);
+    const response = await fetch(`${API_BASE_URL}/api/cars`);
     if (!response.ok) {
       throw new Error(`Failed to load cars (${response.status})`);
     }
@@ -154,25 +169,45 @@ async function loadCars() {
 function renderCars(cars) {
   carsContainer.innerHTML = "";
   for (const car of cars) {
+    const fallbackImage = carImageDataUrl(car);
+    const initialImage = resolveLocalCarImage(car);
     const card = document.createElement("article");
-    card.className = "car-card";
+    card.className = `car-card ${car.vipEligible ? "vip-car-card" : ""}`;
     card.innerHTML = `
       <div class="car-image-wrap">
-        <img class="car-image" alt="${car.name} illustration" src="${carImageDataUrl(car)}" />
+        <img class="car-image" alt="${car.name} illustration" src="${initialImage}" />
       </div>
-      <h3 class="car-title">${car.name}</h3>
-      <p class="car-vin">VIN: ${car.vin}</p>
-      <p class="car-vin">VIP eligible: ${car.vipEligible ? "Yes" : "No"}</p>
-      <button type="button">Get status</button>
-      <div class="status" id="status-${car.vin}">
-        <strong>Status:</strong> <span class="status-dot gray"></span>Unknown<br>
-        <strong>Battery:</strong> -<br>
-        <strong>Station:</strong> -
+      <div class="car-body">
+        <div class="car-meta-row">
+          <h3 class="car-title">${car.name}</h3>
+          <span class="car-vin">VIN: ${car.vin}</span>
+          <span class="car-vin">VIP: ${car.vipEligible ? "Yes" : "No"}</span>
+        </div>
+        <div class="car-status-row">
+          <button type="button">Get status</button>
+          <div class="status" id="status-${car.vin}">
+            <strong>Status:</strong> <span class="status-dot gray"></span>Unknown<br>
+            <strong>Battery:</strong> -<br>
+            <strong>Station:</strong> -
+          </div>
+        </div>
       </div>
     `;
 
     const button = card.querySelector("button");
     const statusBox = card.querySelector(".status");
+    const image = card.querySelector(".car-image");
+    const candidates = candidateCarImagePaths(car.vin);
+    let imageAttempt = 0;
+    image.addEventListener("error", () => {
+      imageAttempt += 1;
+      if (imageAttempt < candidates.length) {
+        image.src = candidates[imageAttempt];
+        return;
+      }
+      image.onerror = null;
+      image.src = fallbackImage;
+    });
     button.addEventListener("click", () => loadStatus(car.vin, statusBox));
 
     carsContainer.appendChild(card);
@@ -199,7 +234,7 @@ async function loadStatus(vin, statusBox) {
   clearError();
   statusBox.textContent = "Loading...";
   try {
-    const response = await fetch(`${apiBaseUrl()}/api/cars/${vin}`);
+    const response = await fetch(`${API_BASE_URL}/api/cars/${vin}`);
     if (!response.ok) {
       throw new Error(`Failed to load status for ${vin} (${response.status})`);
     }
@@ -208,7 +243,7 @@ async function loadStatus(vin, statusBox) {
     statusBox.innerHTML = `
       <strong>Status:</strong> <span class="status-dot ${dotClass}"></span>${details.status}<br>
       <strong>Battery:</strong> ${details.batteryPercentage}%<br>
-      <strong>Station:</strong> ${details.assignedChargingStationId ?? "None"}
+      <strong>Station:</strong> ${stationLabel(details.assignedChargingStationId)}
     `;
   } catch (error) {
     statusBox.textContent = "Could not load status.";
@@ -226,7 +261,7 @@ async function bookVipStation() {
 
   vipResult.textContent = "Booking VIP station...";
   try {
-    const bookResponse = await fetch(`${bookingApiBaseUrl()}/api/vip-stations/book?vin=${encodeURIComponent(vin)}`, {
+    const bookResponse = await fetch(`${BOOKING_API_BASE_URL}/api/vip-stations/book?vin=${encodeURIComponent(vin)}`, {
       method: "POST"
     });
     const bookPayload = await bookResponse.json();
@@ -240,7 +275,6 @@ async function bookVipStation() {
   }
 }
 
-loadCarsButton.addEventListener("click", loadCars);
 bookVipButton.addEventListener("click", bookVipStation);
 loadCars();
 loadInitialStationsStatus();
