@@ -19,6 +19,7 @@ public class BatterySimulationScheduler {
 
     private final CarFleetRegistry fleet;
     private final BookingGrpcClient booking;
+    private final VipChargingEventsPublisher vipChargingEventsPublisher;
 
     @Value("${simulator.low-battery-threshold-percent:20}")
     private int lowBatteryThresholdPercent;
@@ -26,9 +27,13 @@ public class BatterySimulationScheduler {
     @Value("${simulator.charging-complete-percent:80}")
     private int chargingCompletePercent;
 
-    public BatterySimulationScheduler(CarFleetRegistry fleet, BookingGrpcClient booking) {
+    public BatterySimulationScheduler(
+            CarFleetRegistry fleet,
+            BookingGrpcClient booking,
+            VipChargingEventsPublisher vipChargingEventsPublisher) {
         this.fleet = fleet;
         this.booking = booking;
+        this.vipChargingEventsPublisher = vipChargingEventsPublisher;
     }
 
     @Scheduled(fixedRateString = "${simulator.tick-interval-ms:1000}")
@@ -109,6 +114,16 @@ public class BatterySimulationScheduler {
         }
         String stationId = car.assignedChargingStationId();
         if (stationId == null || stationId.isEmpty()) {
+            return;
+        }
+        if (car.vipEligible()) {
+            vipChargingEventsPublisher.publishVipChargingCompleted(car.vin(), stationId);
+            car.setAssignedChargingStationId(null);
+            car.setState(CarState.DRIVING);
+            log.info(
+                    "[simulator] VIP car vin={} reached {}%, published completion and returned to DRIVING",
+                    car.vin(),
+                    car.batteryPercentage());
             return;
         }
         try {

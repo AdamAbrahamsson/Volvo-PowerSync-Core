@@ -114,16 +114,7 @@ async function bookVipStation() {
     if (!bookResponse.ok || !bookPayload.success) {
       throw new Error(bookPayload.message ?? `VIP booking failed (${bookResponse.status})`);
     }
-
-    const syncResponse = await fetch(
-      `${apiBaseUrl()}/api/cars/${encodeURIComponent(vin)}/vip-booking?chargingStationId=${encodeURIComponent(bookPayload.chargingStationId)}`,
-      { method: "POST" }
-    );
-    if (!syncResponse.ok) {
-      throw new Error(`Simulator update failed (${syncResponse.status})`);
-    }
-
-    vipResult.textContent = `Booked VIP station ${bookPayload.chargingStationId} for car ${vin}.`;
+    vipResult.textContent = `Booked VIP station ${bookPayload.chargingStationId} for car ${vin}. Simulator will start charging via Kafka.`;
   } catch (error) {
     vipResult.textContent = "VIP booking failed.";
     showError(error.message);
