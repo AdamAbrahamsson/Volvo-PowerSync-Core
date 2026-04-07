@@ -30,6 +30,55 @@ function notificationApiBaseUrl() {
   return notificationApiBaseInput.value.trim().replace(/\/+$/, "");
 }
 
+function carStatusDotClass(status) {
+  if (status === "CHARGING") return "green";
+  if (status === "DRIVING") return "yellow";
+  if (status === "STOPPED") return "red";
+  return "gray";
+}
+
+function colorFromVin(vin) {
+  let hash = 0;
+  for (let i = 0; i < vin.length; i += 1) {
+    hash = (hash * 31 + vin.charCodeAt(i)) & 0xffffffff;
+  }
+  const palette = [
+    ["#1d4ed8", "#60a5fa"],
+    ["#7c3aed", "#a78bfa"],
+    ["#0f766e", "#2dd4bf"],
+    ["#b45309", "#f59e0b"],
+    ["#be123c", "#fb7185"]
+  ];
+  return palette[Math.abs(hash) % palette.length];
+}
+
+function carImageDataUrl(car) {
+  const [bgStart, bgEnd] = colorFromVin(car.vin);
+  const badge = car.vipEligible ? "VIP" : "CORE";
+  const model = String(car.name ?? "VOLVO").toUpperCase();
+  const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="210" viewBox="0 0 480 210">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="${bgStart}" />
+      <stop offset="100%" stop-color="${bgEnd}" />
+    </linearGradient>
+  </defs>
+  <rect width="480" height="210" rx="20" fill="url(#bg)" />
+  <rect x="16" y="16" width="84" height="30" rx="10" fill="rgba(255,255,255,0.2)" />
+  <text x="58" y="36" fill="white" font-size="16" font-family="Arial, sans-serif" text-anchor="middle">${badge}</text>
+  <g fill="rgba(255,255,255,0.88)">
+    <path d="M96 130c8-30 26-46 52-46h126c30 0 44 10 66 36l24 10c7 3 13 12 13 20v13h-26a26 26 0 0 1-52 0H182a26 26 0 0 1-52 0H96z"/>
+    <circle cx="156" cy="165" r="21" fill="#111827"/>
+    <circle cx="156" cy="165" r="10" fill="#9ca3af"/>
+    <circle cx="325" cy="165" r="21" fill="#111827"/>
+    <circle cx="325" cy="165" r="10" fill="#9ca3af"/>
+  </g>
+  <text x="24" y="194" fill="white" font-size="24" font-family="Arial, sans-serif" font-weight="700">${model}</text>
+</svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
 function renderStationsStatus(stations) {
   stationsStatus.innerHTML = "";
   const sorted = [...stations].sort((a, b) => {
@@ -42,12 +91,14 @@ function renderStationsStatus(stations) {
   });
 
   for (const station of sorted) {
+    const isFree = station.status === "FREE";
+    const dotClass = isFree ? "green" : "red";
     const card = document.createElement("article");
     card.className = "station-card";
     card.innerHTML = `
       <h3 class="station-name">${station.stationName}</h3>
       <div><strong>Type:</strong> ${station.stationType}</div>
-      <div><strong>Status:</strong> ${station.status}</div>
+      <div><strong>Status:</strong> <span class="status-dot ${dotClass}"></span>${station.status}</div>
       <div><strong>Assigned VIN:</strong> ${station.assignedVin ?? "None"}</div>
     `;
     stationsStatus.appendChild(card);
@@ -106,11 +157,18 @@ function renderCars(cars) {
     const card = document.createElement("article");
     card.className = "car-card";
     card.innerHTML = `
+      <div class="car-image-wrap">
+        <img class="car-image" alt="${car.name} illustration" src="${carImageDataUrl(car)}" />
+      </div>
       <h3 class="car-title">${car.name}</h3>
       <p class="car-vin">VIN: ${car.vin}</p>
       <p class="car-vin">VIP eligible: ${car.vipEligible ? "Yes" : "No"}</p>
       <button type="button">Get status</button>
-      <div class="status" id="status-${car.vin}">No status loaded yet.</div>
+      <div class="status" id="status-${car.vin}">
+        <strong>Status:</strong> <span class="status-dot gray"></span>Unknown<br>
+        <strong>Battery:</strong> -<br>
+        <strong>Station:</strong> -
+      </div>
     `;
 
     const button = card.querySelector("button");
@@ -146,8 +204,9 @@ async function loadStatus(vin, statusBox) {
       throw new Error(`Failed to load status for ${vin} (${response.status})`);
     }
     const details = await response.json();
+    const dotClass = carStatusDotClass(details.status);
     statusBox.innerHTML = `
-      <strong>Status:</strong> ${details.status}<br>
+      <strong>Status:</strong> <span class="status-dot ${dotClass}"></span>${details.status}<br>
       <strong>Battery:</strong> ${details.batteryPercentage}%<br>
       <strong>Station:</strong> ${details.assignedChargingStationId ?? "None"}
     `;

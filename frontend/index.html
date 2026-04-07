@@ -8,34 +8,45 @@
 </head>
 <body>
   <main class="container">
-    <h1>PowerSync Car Status</h1>
-    <p class="subtitle">Click "Get status" on any car to fetch current battery and state.</p>
+    <header class="page-header">
+      <h1>PowerSync Dashboard</h1>
+      <p class="subtitle">Cars on the left, charging hubs on the right, all in one live view.</p>
+    </header>
 
-    <section class="controls">
-      <label for="apiBaseUrl">Simulator API base URL</label>
+    <section class="controls panel">
+      <label for="apiBaseUrl">Simulator API</label>
       <input id="apiBaseUrl" type="text" value="http://localhost:8080" />
-      <label for="bookingApiBaseUrl">Booking API base URL</label>
+      <label for="bookingApiBaseUrl">Booking API</label>
       <input id="bookingApiBaseUrl" type="text" value="http://localhost:8081" />
-      <label for="notificationApiBaseUrl">Notification API base URL</label>
+      <label for="notificationApiBaseUrl">Notification API</label>
       <input id="notificationApiBaseUrl" type="text" value="http://localhost:8082" />
-      <button id="loadCarsButton" type="button">Load cars</button>
+      <button id="loadCarsButton" type="button">Refresh cars</button>
     </section>
 
     <section id="error" class="error" aria-live="polite"></section>
-    <section class="vip-panel">
-      <h2>Station Status</h2>
-      <p>Live status for normal and VIP charging hubs.</p>
-      <div id="stationsStatus" class="stations-grid"></div>
+
+    <section class="dashboard-grid">
+      <section class="panel cars-panel">
+        <h2 class="panel-title">Cars</h2>
+        <p class="panel-subtitle">Use <em>Get status</em> to fetch the latest battery and state.</p>
+        <section id="carsContainer" class="cars"></section>
+      </section>
+
+      <section class="panel stations-panel">
+        <h2 class="panel-title">Charging Stations</h2>
+        <p class="panel-subtitle">Live status for all normal and VIP hubs.</p>
+        <div id="stationsStatus" class="stations-grid"></div>
+
+        <div class="vip-booking-block">
+          <h3>VIP Station Booking</h3>
+          <p>Select one VIP car, then book the VIP hub.</p>
+          <label for="vipCarSelect">VIP car</label>
+          <select id="vipCarSelect"></select>
+          <button id="bookVipButton" type="button">Book station</button>
+          <div id="vipResult" class="status">No VIP booking request yet.</div>
+        </div>
+      </section>
     </section>
-    <section class="vip-panel">
-      <h2>VIP Station Hub</h2>
-      <p>Select one VIP car, then book the single VIP station.</p>
-      <label for="vipCarSelect">VIP car</label>
-      <select id="vipCarSelect"></select>
-      <button id="bookVipButton" type="button">Book station</button>
-      <div id="vipResult" class="status">No VIP booking request yet.</div>
-    </section>
-    <section id="carsContainer" class="cars"></section>
   </main>
 
   <script src="./script.js"></script>
