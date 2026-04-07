@@ -25,6 +25,8 @@ public class CarFleetRegistry {
             carsByFleetKey.put("ex40", Car.create("4040", 52));
             carsByFleetKey.put("ex60", Car.create("6060", 38));
             carsByFleetKey.put("ex90", Car.create("9090", 67));
+            carsByFleetKey.put("vip70", Car.createVip("7070", 55));
+            carsByFleetKey.put("vip80", Car.createVip("8080", 58));
         }
     }
 

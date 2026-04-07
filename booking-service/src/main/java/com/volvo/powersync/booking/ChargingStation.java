@@ -25,6 +25,10 @@ public class ChargingStation {
     @Column(nullable = false, length = 32)
     private StationState state;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "station_type", nullable = false, length = 32)
+    private StationType stationType;
+
     /** Which car booked this spot; null while the station is FREE. */
     @Column(name = "assigned_vin", length = 64)
     private String assignedVin;
@@ -43,6 +47,14 @@ public class ChargingStation {
 
     public void setState(StationState state) {
         this.state = state;
+    }
+
+    public StationType getStationType() {
+        return stationType;
+    }
+
+    public void setStationType(StationType stationType) {
+        this.stationType = stationType;
     }
 
     public String getAssignedVin() {

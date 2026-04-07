@@ -54,6 +54,9 @@ public class BatterySimulationScheduler {
 
     /** If the car is low on battery while driving, call booking-service to reserve a station. */
     private void maybeBookChargingStation(Car car) {
+        if (car.vipEligible()) {
+            return;
+        }
         if (car.batteryPercentage() > lowBatteryThresholdPercent) {
             car.clearLowBatteryBookingAttempted();
             return;

@@ -10,17 +10,23 @@ public final class Car {
     private volatile CarState state;
     private volatile String assignedChargingStationId;
     private volatile boolean lowBatteryBookingAttempted;
+    private final boolean vipEligible;
 
-    public Car(String vin, int batteryPercentage, CarState state, String assignedChargingStationId) {
+    public Car(String vin, int batteryPercentage, CarState state, String assignedChargingStationId, boolean vipEligible) {
         this.vin = Objects.requireNonNull(vin, "vin");
         this.batteryPercentage = clampBattery(batteryPercentage);
         this.state = Objects.requireNonNull(state, "state");
         this.assignedChargingStationId = assignedChargingStationId;
+        this.vipEligible = vipEligible;
     }
 
     /** New cars start driving with no charging station. */
     public static Car create(String vin, int batteryPercentage) {
-        return new Car(vin, batteryPercentage, CarState.DRIVING, null);
+        return new Car(vin, batteryPercentage, CarState.DRIVING, null, false);
+    }
+
+    public static Car createVip(String vin, int batteryPercentage) {
+        return new Car(vin, batteryPercentage, CarState.DRIVING, null, true);
     }
 
     public String vin() {
@@ -37,6 +43,10 @@ public final class Car {
 
     public String assignedChargingStationId() {
         return assignedChargingStationId;
+    }
+
+    public boolean vipEligible() {
+        return vipEligible;
     }
 
     public void setState(CarState newState) {

@@ -25,7 +25,13 @@ public class StationBooker {
      */
     @Transactional
     public String tryBookOneFreeStation(String vin) {
-        List<ChargingStation> freeStations = stations.findTop1ByStateOrderByIdAsc(StationState.FREE);
+        return tryBookOneFreeStationByType(vin, StationType.NORMAL);
+    }
+
+    @Transactional
+    public String tryBookOneFreeStationByType(String vin, StationType stationType) {
+        List<ChargingStation> freeStations =
+                stations.findTop1ByStateAndStationTypeOrderByIdAsc(StationState.FREE, stationType);
 
         if (freeStations.isEmpty()) {
             return null;

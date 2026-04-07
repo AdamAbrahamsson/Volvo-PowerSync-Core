@@ -18,6 +18,9 @@ public interface ChargingStationRepository extends JpaRepository<ChargingStation
     List<ChargingStation> findTop1ByStateOrderByIdAsc(StationState state);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    List<ChargingStation> findTop1ByStateAndStationTypeOrderByIdAsc(StationState state, StationType stationType);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from ChargingStation c where c.id = :id")
     Optional<ChargingStation> findByIdWithLock(@Param("id") Long id);
 }

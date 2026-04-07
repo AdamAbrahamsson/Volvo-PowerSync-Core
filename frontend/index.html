@@ -14,10 +14,20 @@
     <section class="controls">
       <label for="apiBaseUrl">Simulator API base URL</label>
       <input id="apiBaseUrl" type="text" value="http://localhost:8080" />
+      <label for="bookingApiBaseUrl">Booking API base URL</label>
+      <input id="bookingApiBaseUrl" type="text" value="http://localhost:8081" />
       <button id="loadCarsButton" type="button">Load cars</button>
     </section>
 
     <section id="error" class="error" aria-live="polite"></section>
+    <section class="vip-panel">
+      <h2>VIP Station Hub</h2>
+      <p>Select one VIP car, then book the single VIP station.</p>
+      <label for="vipCarSelect">VIP car</label>
+      <select id="vipCarSelect"></select>
+      <button id="bookVipButton" type="button">Book station</button>
+      <div id="vipResult" class="status">No VIP booking request yet.</div>
+    </section>
     <section id="carsContainer" class="cars"></section>
   </main>
 
