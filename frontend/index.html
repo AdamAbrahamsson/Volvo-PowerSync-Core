@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
   <main class="container">
     <header class="page-header">
       <h1>PowerSync Dashboard</h1>
@@ -29,9 +30,7 @@
 
         <div class="vip-booking-block">
           <h3>VIP Station Booking</h3>
-          <p>Select one VIP car, then book the VIP hub.</p>
-          <label for="vipCarSelect">VIP car</label>
-          <select id="vipCarSelect"></select>
+          <p>Your VIP driver is selected from the entry page.</p>
           <div id="vipSelectionHint" class="vip-selection-hint">You are booking as: -</div>
           <button id="bookVipButton" type="button">Book station</button>
           <div id="vipResult" class="status">No VIP booking request yet.</div>

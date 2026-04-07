@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choose VIP Driver</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="container">
+    <section class="panel driver-chooser-panel">
+      <h1>Choose Your VIP Car</h1>
+      <p class="subtitle">Pick your VIP car before entering the dashboard race.</p>
+      <div class="driver-cards">
+        <button class="driver-card" type="button" data-vin="7070">
+          <img class="driver-card-image" src="./assets/cars/7070.png" alt="EC40" />
+          <span class="driver-card-title">EC40</span>
+        </button>
+        <button class="driver-card" type="button" data-vin="8080">
+          <img class="driver-card-image" src="./assets/cars/8080.png" alt="ES90" />
+          <span class="driver-card-title">ES90</span>
+        </button>
+      </div>
+
+      <div id="driverSelectionText" class="driver-selection-text">Selected: EC40</div>
+      <button id="enterDashboardButton" class="enter-dashboard-button" type="button">Enter dashboard</button>
+    </section>
+  </main>
+
+  <script src="./choose-driver.js"></script>
+</body>
+</html>

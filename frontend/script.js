@@ -1,10 +1,10 @@
-const vipCarSelect = document.getElementById("vipCarSelect");
 const bookVipButton = document.getElementById("bookVipButton");
 const vipSelectionHint = document.getElementById("vipSelectionHint");
 const stationsStatus = document.getElementById("stationsStatus");
 const vipResult = document.getElementById("vipResult");
 const carsContainer = document.getElementById("carsContainer");
 const errorBox = document.getElementById("error");
+const toastContainer = document.getElementById("toastContainer");
 let stationStatusEventSource = null;
 let carStatusEventSource = null;
 let stationNamesById = new Map();
@@ -13,6 +13,14 @@ let vipBookingInFlight = false;
 const API_BASE_URL = "http://localhost:8080";
 const BOOKING_API_BASE_URL = "http://localhost:8081";
 const NOTIFICATION_API_BASE_URL = "http://localhost:8082";
+const DRIVER_STORAGE_KEY = "powersync.selectedVipDriverVin";
+const selectedDriverVin = sessionStorage.getItem(DRIVER_STORAGE_KEY) ?? localStorage.getItem(DRIVER_STORAGE_KEY);
+let selectedDriverLabel = selectedDriverVin ?? "-";
+let previousSelectedDriverSnapshot = null;
+
+if (!selectedDriverVin) {
+  window.location.href = "./choose-driver.html";
+}
 
 function clearError() {
   errorBox.textContent = "";
@@ -20,6 +28,18 @@ function clearError() {
 
 function showError(message) {
   errorBox.textContent = message;
+}
+
+function showToast(message) {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+  toastContainer.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add("show"));
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 220);
+  }, 8500);
 }
 
 function carStatusDotClass(status) {
@@ -102,14 +122,32 @@ function renderCarStatusInto(statusBox, details) {
   `;
 }
 
+function handleSelectedVipCompletion(car) {
+  if (!selectedDriverVin || car.vin !== selectedDriverVin) {
+    return;
+  }
+  const prev = previousSelectedDriverSnapshot;
+  const reachedTargetAndReleased = car.batteryPercentage >= 80
+    && car.status === "DRIVING"
+    && !car.assignedChargingStationId;
+  const wasChargingBefore = prev && prev.status === "CHARGING";
+  if (reachedTargetAndReleased && wasChargingBefore) {
+    showToast(`Your car reached ${car.batteryPercentage}%. Charging stopped and station released.`);
+  }
+  previousSelectedDriverSnapshot = {
+    status: car.status,
+    batteryPercentage: car.batteryPercentage,
+    assignedChargingStationId: car.assignedChargingStationId
+  };
+}
+
 function updateVipSelectionHint() {
-  const selected = vipCarSelect.options[vipCarSelect.selectedIndex];
-  if (!selected || !selected.value) {
+  if (!selectedDriverVin) {
     vipSelectionHint.textContent = "You are booking as: -";
     bookVipButton.disabled = true;
     return;
   }
-  vipSelectionHint.textContent = `You are booking as: ${selected.textContent}`;
+  vipSelectionHint.textContent = `You are booking as: ${selectedDriverLabel}`;
   bookVipButton.disabled = vipBookingInFlight;
 }
 
@@ -186,6 +224,7 @@ function connectCarStatusStream() {
         if (statusBox) {
           renderCarStatusInto(statusBox, car);
         }
+        handleSelectedVipCompletion(car);
       }
     } catch (error) {
       showError(`Invalid car SSE payload: ${event.data}`);
@@ -207,6 +246,13 @@ async function loadInitialCarsStatus() {
       const statusBox = statusBoxByVin.get(car.vin);
       if (statusBox) {
         renderCarStatusInto(statusBox, car);
+      }
+      if (selectedDriverVin && car.vin === selectedDriverVin) {
+        previousSelectedDriverSnapshot = {
+          status: car.status,
+          batteryPercentage: car.batteryPercentage,
+          assignedChargingStationId: car.assignedChargingStationId
+        };
       }
     }
   } catch (error) {
@@ -279,20 +325,15 @@ function renderCars(cars) {
 }
 
 function renderVipCars(vipCars) {
-  vipCarSelect.innerHTML = "";
-  for (const car of vipCars) {
-    const option = document.createElement("option");
-    option.value = car.vin;
-    option.textContent = `${car.name} (${car.vin})`;
-    vipCarSelect.appendChild(option);
+  const selectedCar = vipCars.find((car) => car.vin === selectedDriverVin);
+  if (selectedCar) {
+    selectedDriverLabel = `${selectedCar.name} (${selectedCar.vin})`;
+    updateVipSelectionHint();
+    return;
   }
-  if (vipCars.length === 0) {
-    const option = document.createElement("option");
-    option.value = "";
-    option.textContent = "No VIP cars found";
-    vipCarSelect.appendChild(option);
-  }
-  vipCarSelect.disabled = vipBookingInFlight || vipCars.length === 0;
+  selectedDriverLabel = selectedDriverVin ?? "-";
+  bookVipButton.disabled = true;
+  showError(`Selected VIP car ${selectedDriverVin} is not available right now.`);
   updateVipSelectionHint();
 }
 
@@ -301,14 +342,13 @@ async function bookVipStation() {
   if (vipBookingInFlight) {
     return;
   }
-  const vin = vipCarSelect.value;
+  const vin = selectedDriverVin;
   if (!vin) {
     showError("No VIP car selected.");
     return;
   }
 
   vipBookingInFlight = true;
-  vipCarSelect.disabled = true;
   bookVipButton.disabled = true;
   vipResult.textContent = "Booking VIP station...";
   try {
@@ -325,12 +365,10 @@ async function bookVipStation() {
     showError(error.message);
   } finally {
     vipBookingInFlight = false;
-    vipCarSelect.disabled = !vipCarSelect.value;
     updateVipSelectionHint();
   }
 }
 
-vipCarSelect.addEventListener("change", updateVipSelectionHint);
 bookVipButton.addEventListener("click", bookVipStation);
 loadCars();
 loadInitialStationsStatus();
