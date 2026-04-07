@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 public class VipBookingEventsPublisher {
 
     static final String VIP_BOOKED_TOPIC = "vip-booked-events";
-    static final String VIP_STATION_STATUS_TOPIC = "vip-station-status-events";
+    static final String STATION_STATUS_TOPIC = "station-status-events";
 
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
@@ -28,12 +28,18 @@ public class VipBookingEventsPublisher {
         }
     }
 
-    public void publishVipStationStatus(String status, String assignedVin) {
-        VipStationStatusEvent event = new VipStationStatusEvent(status, assignedVin, System.currentTimeMillis());
+    public void publishStationStatus(ChargingStation station) {
+        StationStatusEvent event = new StationStatusEvent(
+                String.valueOf(station.getId()),
+                station.getName(),
+                station.getStationType().name(),
+                station.getState().name(),
+                station.getAssignedVin(),
+                System.currentTimeMillis());
         try {
-            kafkaTemplate.send(VIP_STATION_STATUS_TOPIC, "vip-hub", objectMapper.writeValueAsString(event));
+            kafkaTemplate.send(STATION_STATUS_TOPIC, event.stationId(), objectMapper.writeValueAsString(event));
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Failed to serialize VIP station status event", e);
+            throw new IllegalStateException("Failed to serialize station status event", e);
         }
     }
 }

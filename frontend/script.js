@@ -4,11 +4,11 @@ const notificationApiBaseInput = document.getElementById("notificationApiBaseUrl
 const loadCarsButton = document.getElementById("loadCarsButton");
 const vipCarSelect = document.getElementById("vipCarSelect");
 const bookVipButton = document.getElementById("bookVipButton");
-const vipStationStatus = document.getElementById("vipStationStatus");
+const stationsStatus = document.getElementById("stationsStatus");
 const vipResult = document.getElementById("vipResult");
 const carsContainer = document.getElementById("carsContainer");
 const errorBox = document.getElementById("error");
-let vipStatusEventSource = null;
+let stationStatusEventSource = null;
 
 function clearError() {
   errorBox.textContent = "";
@@ -30,40 +30,55 @@ function notificationApiBaseUrl() {
   return notificationApiBaseInput.value.trim().replace(/\/+$/, "");
 }
 
-function renderVipStationStatus(payload) {
-  const status = payload?.status ?? "UNKNOWN";
-  const assignedVin = payload?.assignedVin ?? "None";
-  vipStationStatus.innerHTML = `
-    <strong>VIP station status:</strong> ${status}<br>
-    <strong>Assigned VIN:</strong> ${assignedVin}
-  `;
+function renderStationsStatus(stations) {
+  stationsStatus.innerHTML = "";
+  const sorted = [...stations].sort((a, b) => {
+    if (a.stationType === b.stationType) {
+      return a.stationName.localeCompare(b.stationName);
+    }
+    if (a.stationType === "VIP") return 1;
+    if (b.stationType === "VIP") return -1;
+    return a.stationType.localeCompare(b.stationType);
+  });
+
+  for (const station of sorted) {
+    const card = document.createElement("article");
+    card.className = "station-card";
+    card.innerHTML = `
+      <h3 class="station-name">${station.stationName}</h3>
+      <div><strong>Type:</strong> ${station.stationType}</div>
+      <div><strong>Status:</strong> ${station.status}</div>
+      <div><strong>Assigned VIN:</strong> ${station.assignedVin ?? "None"}</div>
+    `;
+    stationsStatus.appendChild(card);
+  }
 }
 
-async function loadInitialVipStationStatus() {
+async function loadInitialStationsStatus() {
   try {
-    const response = await fetch(`${notificationApiBaseUrl()}/api/vip-station-status`);
+    const response = await fetch(`${notificationApiBaseUrl()}/api/stations-status`);
     if (!response.ok) {
-      throw new Error(`Failed to load VIP station status (${response.status})`);
+      throw new Error(`Failed to load station status (${response.status})`);
     }
-    renderVipStationStatus(await response.json());
+    renderStationsStatus(await response.json());
   } catch (error) {
     showError(error.message);
   }
 }
 
-function connectVipStationStream() {
-  if (vipStatusEventSource) {
-    vipStatusEventSource.close();
+function connectStationStream() {
+  if (stationStatusEventSource) {
+    stationStatusEventSource.close();
   }
-  vipStatusEventSource = new EventSource(`${notificationApiBaseUrl()}/api/vip-station-status/stream`);
-  vipStatusEventSource.addEventListener("vip-station-status", (event) => {
+  stationStatusEventSource = new EventSource(`${notificationApiBaseUrl()}/api/stations-status/stream`);
+  stationStatusEventSource.addEventListener("station-status", (event) => {
     try {
-      renderVipStationStatus(JSON.parse(event.data));
+      renderStationsStatus(JSON.parse(event.data));
     } catch (error) {
       showError(`Invalid SSE payload: ${event.data}`);
     }
   });
-  vipStatusEventSource.onerror = () => {
+  stationStatusEventSource.onerror = () => {
     showError("SSE connection to notification-service interrupted.");
   };
 }
@@ -169,5 +184,5 @@ async function bookVipStation() {
 loadCarsButton.addEventListener("click", loadCars);
 bookVipButton.addEventListener("click", bookVipStation);
 loadCars();
-loadInitialVipStationStatus();
-connectVipStationStream();
+loadInitialStationsStatus();
+connectStationStream();

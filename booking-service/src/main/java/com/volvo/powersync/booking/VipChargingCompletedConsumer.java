@@ -14,15 +14,10 @@ public class VipChargingCompletedConsumer {
 
     private final StationBooker stationBooker;
     private final ObjectMapper objectMapper;
-    private final VipBookingEventsPublisher vipBookingEventsPublisher;
 
-    public VipChargingCompletedConsumer(
-            StationBooker stationBooker,
-            ObjectMapper objectMapper,
-            VipBookingEventsPublisher vipBookingEventsPublisher) {
+    public VipChargingCompletedConsumer(StationBooker stationBooker, ObjectMapper objectMapper) {
         this.stationBooker = stationBooker;
         this.objectMapper = objectMapper;
-        this.vipBookingEventsPublisher = vipBookingEventsPublisher;
     }
 
     @KafkaListener(topics = "vip-charging-completed-events", groupId = "booking-service")
@@ -36,7 +31,6 @@ public class VipChargingCompletedConsumer {
         }
         boolean released = stationBooker.releaseStation(event.vin(), event.chargingStationId());
         if (released) {
-            vipBookingEventsPublisher.publishVipStationStatus("FREE", null);
             log.info(
                     "Released VIP station {} for vin={} after 80% event",
                     event.chargingStationId(),

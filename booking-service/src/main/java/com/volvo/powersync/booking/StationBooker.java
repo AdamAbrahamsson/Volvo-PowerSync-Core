@@ -13,9 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class StationBooker {
 
     private final ChargingStationRepository stations;
+    private final VipBookingEventsPublisher eventsPublisher;
 
-    public StationBooker(ChargingStationRepository stations) {
+    public StationBooker(ChargingStationRepository stations, VipBookingEventsPublisher eventsPublisher) {
         this.stations = stations;
+        this.eventsPublisher = eventsPublisher;
     }
 
     /**
@@ -41,6 +43,7 @@ public class StationBooker {
         station.setState(StationState.BOOKED);
         station.setAssignedVin(vin);
         stations.save(station);
+        eventsPublisher.publishStationStatus(station);
 
         return String.valueOf(station.getId());
     }
@@ -70,6 +73,7 @@ public class StationBooker {
         station.setState(StationState.FREE);
         station.setAssignedVin(null);
         stations.save(station);
+        eventsPublisher.publishStationStatus(station);
         return true;
     }
 }

@@ -114,3 +114,22 @@ button:hover {
   border: 1px solid #d1d5db;
   border-radius: 6px;
 }
+
+.stations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.station-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.station-name {
+  margin: 0 0 6px;
+  font-size: 16px;
+}

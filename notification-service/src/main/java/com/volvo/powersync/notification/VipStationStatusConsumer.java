@@ -25,15 +25,19 @@ public class VipStationStatusConsumer {
         this.broadcaster = broadcaster;
     }
 
-    @KafkaListener(topics = "vip-station-status-events", groupId = "notification-service")
-    public void onVipStatus(String payload) {
+    @KafkaListener(topics = "station-status-events", groupId = "notification-service")
+    public void onStationStatus(String payload) {
         try {
-            VipStationStatusEvent event = objectMapper.readValue(payload, VipStationStatusEvent.class);
+            StationStatusEvent event = objectMapper.readValue(payload, StationStatusEvent.class);
             store.update(event);
-            broadcaster.broadcast(event);
-            log.info("VIP station status update: {} assignedVin={}", event.status(), event.assignedVin());
+            broadcaster.broadcast(store.getCurrent());
+            log.info(
+                    "Station status update: {}={} assignedVin={}",
+                    event.stationName(),
+                    event.status(),
+                    event.assignedVin());
         } catch (JsonProcessingException e) {
-            log.error("Invalid VIP station status payload: {}", payload);
+            log.error("Invalid station status payload: {}", payload);
         }
     }
 }
