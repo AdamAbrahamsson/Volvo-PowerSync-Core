@@ -20,6 +20,7 @@ public class BatterySimulationScheduler {
     private final CarFleetRegistry fleet;
     private final BookingGrpcClient booking;
     private final VipChargingEventsPublisher vipChargingEventsPublisher;
+    private final CarStatusEventsPublisher carStatusEventsPublisher;
 
     @Value("${simulator.low-battery-threshold-percent:20}")
     private int lowBatteryThresholdPercent;
@@ -30,10 +31,12 @@ public class BatterySimulationScheduler {
     public BatterySimulationScheduler(
             CarFleetRegistry fleet,
             BookingGrpcClient booking,
-            VipChargingEventsPublisher vipChargingEventsPublisher) {
+            VipChargingEventsPublisher vipChargingEventsPublisher,
+            CarStatusEventsPublisher carStatusEventsPublisher) {
         this.fleet = fleet;
         this.booking = booking;
         this.vipChargingEventsPublisher = vipChargingEventsPublisher;
+        this.carStatusEventsPublisher = carStatusEventsPublisher;
     }
 
     @Scheduled(fixedRateString = "${simulator.tick-interval-ms:1000}")
@@ -43,6 +46,7 @@ public class BatterySimulationScheduler {
             car.applyBatteryTick();
             maybeBookChargingStation(car);
             maybeReleaseChargingStation(car);
+            carStatusEventsPublisher.publish(car);
             if (!line.isEmpty()) {
                 line.append(" | ");
             }

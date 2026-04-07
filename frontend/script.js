@@ -5,7 +5,9 @@ const vipResult = document.getElementById("vipResult");
 const carsContainer = document.getElementById("carsContainer");
 const errorBox = document.getElementById("error");
 let stationStatusEventSource = null;
+let carStatusEventSource = null;
 let stationNamesById = new Map();
+let statusBoxByVin = new Map();
 const API_BASE_URL = "http://localhost:8080";
 const BOOKING_API_BASE_URL = "http://localhost:8081";
 const NOTIFICATION_API_BASE_URL = "http://localhost:8082";
@@ -89,6 +91,15 @@ function stationLabel(stationId) {
   return stationNamesById.get(String(stationId)) ?? stationId;
 }
 
+function renderCarStatusInto(statusBox, details) {
+  const dotClass = carStatusDotClass(details.status);
+  statusBox.innerHTML = `
+    <strong>Status:</strong> <span class="status-dot ${dotClass}"></span>${details.status}<br>
+    <strong>Battery:</strong> ${details.batteryPercentage}%<br>
+    <strong>Station:</strong> ${stationLabel(details.assignedChargingStationId)}
+  `;
+}
+
 function renderStationsStatus(stations) {
   stationsStatus.innerHTML = "";
   stationNamesById = new Map(
@@ -149,6 +160,47 @@ function connectStationStream() {
   };
 }
 
+function connectCarStatusStream() {
+  if (carStatusEventSource) {
+    carStatusEventSource.close();
+  }
+  carStatusEventSource = new EventSource(`${NOTIFICATION_API_BASE_URL}/api/cars-status/stream`);
+  carStatusEventSource.addEventListener("car-status", (event) => {
+    try {
+      const cars = JSON.parse(event.data);
+      for (const car of cars) {
+        const statusBox = statusBoxByVin.get(car.vin);
+        if (statusBox) {
+          renderCarStatusInto(statusBox, car);
+        }
+      }
+    } catch (error) {
+      showError(`Invalid car SSE payload: ${event.data}`);
+    }
+  });
+  carStatusEventSource.onerror = () => {
+    showError("SSE connection to notification-service (cars) interrupted.");
+  };
+}
+
+async function loadInitialCarsStatus() {
+  try {
+    const response = await fetch(`${NOTIFICATION_API_BASE_URL}/api/cars-status`);
+    if (!response.ok) {
+      throw new Error(`Failed to load cars status (${response.status})`);
+    }
+    const cars = await response.json();
+    for (const car of cars) {
+      const statusBox = statusBoxByVin.get(car.vin);
+      if (statusBox) {
+        renderCarStatusInto(statusBox, car);
+      }
+    }
+  } catch (error) {
+    showError(error.message);
+  }
+}
+
 async function loadCars() {
   clearError();
   carsContainer.innerHTML = "Loading cars...";
@@ -168,6 +220,7 @@ async function loadCars() {
 
 function renderCars(cars) {
   carsContainer.innerHTML = "";
+  statusBoxByVin = new Map();
   for (const car of cars) {
     const fallbackImage = carImageDataUrl(car);
     const initialImage = resolveLocalCarImage(car);
@@ -184,7 +237,6 @@ function renderCars(cars) {
           <span class="car-vin">VIP: ${car.vipEligible ? "Yes" : "No"}</span>
         </div>
         <div class="car-status-row">
-          <button type="button">Get status</button>
           <div class="status" id="status-${car.vin}">
             <strong>Status:</strong> <span class="status-dot gray"></span>Unknown<br>
             <strong>Battery:</strong> -<br>
@@ -194,7 +246,6 @@ function renderCars(cars) {
       </div>
     `;
 
-    const button = card.querySelector("button");
     const statusBox = card.querySelector(".status");
     const image = card.querySelector(".car-image");
     const candidates = candidateCarImagePaths(car.vin);
@@ -208,7 +259,7 @@ function renderCars(cars) {
       image.onerror = null;
       image.src = fallbackImage;
     });
-    button.addEventListener("click", () => loadStatus(car.vin, statusBox));
+    statusBoxByVin.set(car.vin, statusBox);
 
     carsContainer.appendChild(card);
   }
@@ -227,27 +278,6 @@ function renderVipCars(vipCars) {
     option.value = "";
     option.textContent = "No VIP cars found";
     vipCarSelect.appendChild(option);
-  }
-}
-
-async function loadStatus(vin, statusBox) {
-  clearError();
-  statusBox.textContent = "Loading...";
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/cars/${vin}`);
-    if (!response.ok) {
-      throw new Error(`Failed to load status for ${vin} (${response.status})`);
-    }
-    const details = await response.json();
-    const dotClass = carStatusDotClass(details.status);
-    statusBox.innerHTML = `
-      <strong>Status:</strong> <span class="status-dot ${dotClass}"></span>${details.status}<br>
-      <strong>Battery:</strong> ${details.batteryPercentage}%<br>
-      <strong>Station:</strong> ${stationLabel(details.assignedChargingStationId)}
-    `;
-  } catch (error) {
-    statusBox.textContent = "Could not load status.";
-    showError(error.message);
   }
 }
 
@@ -278,4 +308,6 @@ async function bookVipStation() {
 bookVipButton.addEventListener("click", bookVipStation);
 loadCars();
 loadInitialStationsStatus();
+loadInitialCarsStatus();
 connectStationStream();
+connectCarStatusStream();
