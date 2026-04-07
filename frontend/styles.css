@@ -183,6 +183,13 @@ button:hover {
   font-size: 14px;
 }
 
+.vip-selection-hint {
+  margin: 8px 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+}
+
 .stations-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

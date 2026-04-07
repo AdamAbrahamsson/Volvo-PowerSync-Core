@@ -1,5 +1,6 @@
 const vipCarSelect = document.getElementById("vipCarSelect");
 const bookVipButton = document.getElementById("bookVipButton");
+const vipSelectionHint = document.getElementById("vipSelectionHint");
 const stationsStatus = document.getElementById("stationsStatus");
 const vipResult = document.getElementById("vipResult");
 const carsContainer = document.getElementById("carsContainer");
@@ -8,6 +9,7 @@ let stationStatusEventSource = null;
 let carStatusEventSource = null;
 let stationNamesById = new Map();
 let statusBoxByVin = new Map();
+let vipBookingInFlight = false;
 const API_BASE_URL = "http://localhost:8080";
 const BOOKING_API_BASE_URL = "http://localhost:8081";
 const NOTIFICATION_API_BASE_URL = "http://localhost:8082";
@@ -98,6 +100,17 @@ function renderCarStatusInto(statusBox, details) {
     <strong>Battery:</strong> ${details.batteryPercentage}%<br>
     <strong>Station:</strong> ${stationLabel(details.assignedChargingStationId)}
   `;
+}
+
+function updateVipSelectionHint() {
+  const selected = vipCarSelect.options[vipCarSelect.selectedIndex];
+  if (!selected || !selected.value) {
+    vipSelectionHint.textContent = "You are booking as: -";
+    bookVipButton.disabled = true;
+    return;
+  }
+  vipSelectionHint.textContent = `You are booking as: ${selected.textContent}`;
+  bookVipButton.disabled = vipBookingInFlight;
 }
 
 function renderStationsStatus(stations) {
@@ -279,16 +292,24 @@ function renderVipCars(vipCars) {
     option.textContent = "No VIP cars found";
     vipCarSelect.appendChild(option);
   }
+  vipCarSelect.disabled = vipBookingInFlight || vipCars.length === 0;
+  updateVipSelectionHint();
 }
 
 async function bookVipStation() {
   clearError();
+  if (vipBookingInFlight) {
+    return;
+  }
   const vin = vipCarSelect.value;
   if (!vin) {
     showError("No VIP car selected.");
     return;
   }
 
+  vipBookingInFlight = true;
+  vipCarSelect.disabled = true;
+  bookVipButton.disabled = true;
   vipResult.textContent = "Booking VIP station...";
   try {
     const bookResponse = await fetch(`${BOOKING_API_BASE_URL}/api/vip-stations/book?vin=${encodeURIComponent(vin)}`, {
@@ -302,9 +323,14 @@ async function bookVipStation() {
   } catch (error) {
     vipResult.textContent = "VIP booking failed.";
     showError(error.message);
+  } finally {
+    vipBookingInFlight = false;
+    vipCarSelect.disabled = !vipCarSelect.value;
+    updateVipSelectionHint();
   }
 }
 
+vipCarSelect.addEventListener("change", updateVipSelectionHint);
 bookVipButton.addEventListener("click", bookVipStation);
 loadCars();
 loadInitialStationsStatus();

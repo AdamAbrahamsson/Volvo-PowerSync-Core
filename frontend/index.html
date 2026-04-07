@@ -18,7 +18,7 @@
     <section class="dashboard-grid">
       <section class="panel cars-panel">
         <h2 class="panel-title">Cars</h2>
-        <p class="panel-subtitle">Use <em>Get status</em> to fetch the latest battery and state.</p>
+        <p class="panel-subtitle">Live car state updates stream automatically.</p>
         <section id="carsContainer" class="cars"></section>
       </section>
 
@@ -32,6 +32,7 @@
           <p>Select one VIP car, then book the VIP hub.</p>
           <label for="vipCarSelect">VIP car</label>
           <select id="vipCarSelect"></select>
+          <div id="vipSelectionHint" class="vip-selection-hint">You are booking as: -</div>
           <button id="bookVipButton" type="button">Book station</button>
           <div id="vipResult" class="status">No VIP booking request yet.</div>
         </div>
