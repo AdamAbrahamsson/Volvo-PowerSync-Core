@@ -1,11 +1,14 @@
 const apiBaseInput = document.getElementById("apiBaseUrl");
 const bookingApiBaseInput = document.getElementById("bookingApiBaseUrl");
+const notificationApiBaseInput = document.getElementById("notificationApiBaseUrl");
 const loadCarsButton = document.getElementById("loadCarsButton");
 const vipCarSelect = document.getElementById("vipCarSelect");
 const bookVipButton = document.getElementById("bookVipButton");
+const vipStationStatus = document.getElementById("vipStationStatus");
 const vipResult = document.getElementById("vipResult");
 const carsContainer = document.getElementById("carsContainer");
 const errorBox = document.getElementById("error");
+let vipStatusEventSource = null;
 
 function clearError() {
   errorBox.textContent = "";
@@ -21,6 +24,48 @@ function apiBaseUrl() {
 
 function bookingApiBaseUrl() {
   return bookingApiBaseInput.value.trim().replace(/\/+$/, "");
+}
+
+function notificationApiBaseUrl() {
+  return notificationApiBaseInput.value.trim().replace(/\/+$/, "");
+}
+
+function renderVipStationStatus(payload) {
+  const status = payload?.status ?? "UNKNOWN";
+  const assignedVin = payload?.assignedVin ?? "None";
+  vipStationStatus.innerHTML = `
+    <strong>VIP station status:</strong> ${status}<br>
+    <strong>Assigned VIN:</strong> ${assignedVin}
+  `;
+}
+
+async function loadInitialVipStationStatus() {
+  try {
+    const response = await fetch(`${notificationApiBaseUrl()}/api/vip-station-status`);
+    if (!response.ok) {
+      throw new Error(`Failed to load VIP station status (${response.status})`);
+    }
+    renderVipStationStatus(await response.json());
+  } catch (error) {
+    showError(error.message);
+  }
+}
+
+function connectVipStationStream() {
+  if (vipStatusEventSource) {
+    vipStatusEventSource.close();
+  }
+  vipStatusEventSource = new EventSource(`${notificationApiBaseUrl()}/api/vip-station-status/stream`);
+  vipStatusEventSource.addEventListener("vip-station-status", (event) => {
+    try {
+      renderVipStationStatus(JSON.parse(event.data));
+    } catch (error) {
+      showError(`Invalid SSE payload: ${event.data}`);
+    }
+  });
+  vipStatusEventSource.onerror = () => {
+    showError("SSE connection to notification-service interrupted.");
+  };
 }
 
 async function loadCars() {
@@ -124,3 +169,5 @@ async function bookVipStation() {
 loadCarsButton.addEventListener("click", loadCars);
 bookVipButton.addEventListener("click", bookVipStation);
 loadCars();
+loadInitialVipStationStatus();
+connectVipStationStream();

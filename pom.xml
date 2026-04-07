@@ -20,6 +20,7 @@
     <modules>
         <module>booking-api</module>
         <module>booking-service</module>
+        <module>notification-service</module>
         <module>simulator-service</module>
     </modules>
 

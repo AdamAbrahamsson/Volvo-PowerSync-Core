@@ -16,6 +16,8 @@
       <input id="apiBaseUrl" type="text" value="http://localhost:8080" />
       <label for="bookingApiBaseUrl">Booking API base URL</label>
       <input id="bookingApiBaseUrl" type="text" value="http://localhost:8081" />
+      <label for="notificationApiBaseUrl">Notification API base URL</label>
+      <input id="notificationApiBaseUrl" type="text" value="http://localhost:8082" />
       <button id="loadCarsButton" type="button">Load cars</button>
     </section>
 
@@ -26,6 +28,7 @@
       <label for="vipCarSelect">VIP car</label>
       <select id="vipCarSelect"></select>
       <button id="bookVipButton" type="button">Book station</button>
+      <div id="vipStationStatus" class="status">VIP station status: UNKNOWN</div>
       <div id="vipResult" class="status">No VIP booking request yet.</div>
     </section>
     <section id="carsContainer" class="cars"></section>

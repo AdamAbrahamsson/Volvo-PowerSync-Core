@@ -34,6 +34,7 @@ public class VipBookingController {
             return new VipBookReply(false, "", "VIP station is already booked");
         }
         vipBookingEventsPublisher.publishVipBooked(vin, stationId);
+        vipBookingEventsPublisher.publishVipStationStatus("BOOKED", vin);
         return new VipBookReply(true, stationId, "VIP station booked");
     }
 
