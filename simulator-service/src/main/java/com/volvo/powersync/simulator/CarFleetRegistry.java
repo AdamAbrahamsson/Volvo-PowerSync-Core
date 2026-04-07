@@ -49,6 +49,12 @@ public class CarFleetRegistry {
         }
     }
 
+    public Map<String, Car> allCarsByFleetKey() {
+        synchronized (carsByFleetKey) {
+            return new LinkedHashMap<>(carsByFleetKey);
+        }
+    }
+
     public int size() {
         return carsByFleetKey.size();
     }

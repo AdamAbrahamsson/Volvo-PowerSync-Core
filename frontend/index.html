@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PowerSync Cars</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="container">
+    <h1>PowerSync Car Status</h1>
+    <p class="subtitle">Click "Get status" on any car to fetch current battery and state.</p>
+
+    <section class="controls">
+      <label for="apiBaseUrl">Simulator API base URL</label>
+      <input id="apiBaseUrl" type="text" value="http://localhost:8080" />
+      <button id="loadCarsButton" type="button">Load cars</button>
+    </section>
+
+    <section id="error" class="error" aria-live="polite"></section>
+    <section id="carsContainer" class="cars"></section>
+  </main>
+
+  <script src="./script.js"></script>
+</body>
+</html>
