@@ -88,3 +88,29 @@ Open:
 - Station SSE: `GET /api/stations-status/stream` (event: `station-status`)
 - Car snapshot: `GET /api/cars-status`
 - Car SSE: `GET /api/cars-status/stream` (event: `car-status`)
+
+## Kafka Topics
+
+- `vip-booked-events`
+  - Purpose: notifies simulator that VIP booking succeeded.
+  - Producer: `booking-service`
+  - Consumer: `simulator-service`
+  - Payload: VIP booking event with `vin`, `chargingStationId`, `timestampMs`.
+
+- `vip-charging-completed-events`
+  - Purpose: notifies booking service that VIP car reached charge target and should release station.
+  - Producer: `simulator-service`
+  - Consumer: `booking-service`
+  - Payload: VIP charging completion event with `vin`, `chargingStationId`, `timestampMs`.
+
+- `station-status-events`
+  - Purpose: broadcasts station state changes for live UI updates.
+  - Producer: `booking-service`
+  - Consumer: `notification-service`
+  - Payload: station status event with `stationId`, `stationName`, `stationType`, `status`, `assignedVin`, `timestampMs`.
+
+- `car-status-events`
+  - Purpose: streams live car telemetry each simulator tick.
+  - Producer: `simulator-service`
+  - Consumer: `notification-service`
+  - Payload: car status event with `vin`, `batteryPercentage`, `status`, `assignedChargingStationId`, `vipEligible`, `timestampMs`.
