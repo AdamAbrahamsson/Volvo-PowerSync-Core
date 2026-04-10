@@ -10,9 +10,13 @@ let carStatusEventSource = null;
 let stationNamesById = new Map();
 let statusBoxByVin = new Map();
 let vipBookingInFlight = false;
-const API_BASE_URL = "http://localhost:8080";
-const BOOKING_API_BASE_URL = "http://localhost:8081";
-const NOTIFICATION_API_BASE_URL = "http://localhost:8082";
+// Same host in prod (Ingress + Cloudflare Tunnel); explicit localhost when developing locally.
+const IS_LOCAL_DEV =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+const API_BASE_URL = IS_LOCAL_DEV ? "http://localhost:8080" : "";
+const BOOKING_API_BASE_URL = IS_LOCAL_DEV ? "http://localhost:8081" : "";
+const NOTIFICATION_API_BASE_URL = IS_LOCAL_DEV ? "http://localhost:8082" : "";
 const DRIVER_STORAGE_KEY = "powersync.selectedVipDriverVin";
 const selectedDriverVin = sessionStorage.getItem(DRIVER_STORAGE_KEY) ?? localStorage.getItem(DRIVER_STORAGE_KEY);
 let selectedDriverLabel = selectedDriverVin ?? "-";
