@@ -14,10 +14,15 @@ public class StationBooker {
 
     private final ChargingStationRepository stations;
     private final VipBookingEventsPublisher eventsPublisher;
+    private final BookingMetrics bookingMetrics;
 
-    public StationBooker(ChargingStationRepository stations, VipBookingEventsPublisher eventsPublisher) {
+    public StationBooker(
+            ChargingStationRepository stations,
+            VipBookingEventsPublisher eventsPublisher,
+            BookingMetrics bookingMetrics) {
         this.stations = stations;
         this.eventsPublisher = eventsPublisher;
+        this.bookingMetrics = bookingMetrics;
     }
 
     /**
@@ -36,6 +41,7 @@ public class StationBooker {
                 stations.findTop1ByStateAndStationTypeOrderByIdAsc(StationState.FREE, stationType);
 
         if (freeStations.isEmpty()) {
+            bookingMetrics.bookingFailure(stationType, "no_free_station");
             return null;
         }
 
@@ -44,6 +50,7 @@ public class StationBooker {
         station.setAssignedVin(vin);
         stations.save(station);
         eventsPublisher.publishStationStatus(station);
+        bookingMetrics.bookingSuccess(station);
 
         return String.valueOf(station.getId());
     }
@@ -57,23 +64,28 @@ public class StationBooker {
         try {
             id = Long.parseLong(stationIdText);
         } catch (NumberFormatException e) {
+            bookingMetrics.releaseFailure("invalid_station_id");
             return false;
         }
         Optional<ChargingStation> locked = stations.findByIdWithLock(id);
         if (locked.isEmpty()) {
+            bookingMetrics.releaseFailure("not_found");
             return false;
         }
         ChargingStation station = locked.get();
         if (station.getState() != StationState.BOOKED) {
+            bookingMetrics.releaseFailure("not_booked");
             return false;
         }
         if (station.getAssignedVin() == null || !station.getAssignedVin().equals(vin)) {
+            bookingMetrics.releaseFailure("vin_mismatch");
             return false;
         }
         station.setState(StationState.FREE);
         station.setAssignedVin(null);
         stations.save(station);
         eventsPublisher.publishStationStatus(station);
+        bookingMetrics.releaseSuccess(station);
         return true;
     }
 
@@ -90,6 +102,7 @@ public class StationBooker {
             station.setAssignedVin(null);
             stations.save(station);
             eventsPublisher.publishStationStatus(station);
+            bookingMetrics.stationStateSync(station);
         }
     }
 }

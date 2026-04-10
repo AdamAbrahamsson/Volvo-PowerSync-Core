@@ -34,3 +34,12 @@ logging:
   level:
     com.volvo.powersync.booking: INFO
     net.devh.boot.grpc: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    prometheus:
+      access: unrestricted
