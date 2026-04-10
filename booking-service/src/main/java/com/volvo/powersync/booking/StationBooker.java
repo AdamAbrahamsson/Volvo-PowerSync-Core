@@ -76,4 +76,20 @@ public class StationBooker {
         eventsPublisher.publishStationStatus(station);
         return true;
     }
+
+    /**
+     * Startup safety reset:
+     * if simulator cars restart from fresh in-memory state, persisted BOOKED rows become stale.
+     * We clear every assignment so the system starts from a consistent baseline.
+     */
+    @Transactional
+    public void resetAllStationsToFree() {
+        List<ChargingStation> allStations = stations.findAll();
+        for (ChargingStation station : allStations) {
+            station.setState(StationState.FREE);
+            station.setAssignedVin(null);
+            stations.save(station);
+            eventsPublisher.publishStationStatus(station);
+        }
+    }
 }
