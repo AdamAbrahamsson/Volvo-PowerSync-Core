@@ -2,6 +2,7 @@ package com.volvo.powersync.simulator;
 
 import com.volvo.powersync.grpc.booking.BookChargingReply;
 import com.volvo.powersync.grpc.booking.ReleaseChargingReply;
+import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +29,10 @@ public class BatterySimulationScheduler {
     @Value("${simulator.charging-complete-percent:80}")
     private int chargingCompletePercent;
 
+    /** Percent battery gain per tick while charging. */
+    @Value("${simulator.battery-charge-percent-per-tick:4}")
+    private int batteryChargePercentPerTick;
+
     public BatterySimulationScheduler(
             CarFleetRegistry fleet,
             BookingGrpcClient booking,
@@ -43,7 +48,8 @@ public class BatterySimulationScheduler {
     public void tick() {
         StringBuilder line = new StringBuilder(128);
         for (Car car : fleet.allCars()) {
-            car.applyBatteryTick();
+            int drivingDrain = ThreadLocalRandom.current().nextBoolean() ? 2 : 4;
+            car.applyBatteryTick(drivingDrain, batteryChargePercentPerTick);
             maybeBookChargingStation(car);
             maybeReleaseChargingStation(car);
             carStatusEventsPublisher.publish(car);
@@ -117,8 +123,8 @@ public class BatterySimulationScheduler {
             return;
         }
         String stationId = car.assignedChargingStationId();
-        if (stationId == null || stationId.isEmpty()) {
-            return;
+        if (stationId == null) {
+            stationId = "";
         }
         if (car.vipEligible()) {
             vipChargingEventsPublisher.publishVipChargingCompleted(car.vin(), stationId);
@@ -137,22 +143,32 @@ public class BatterySimulationScheduler {
                 car.setState(CarState.DRIVING);
                 log.info(
                         "[simulator] Released station id={} for vin={} (battery {}%), back to DRIVING",
-                        stationId,
+                        stationId.isEmpty() ? "(by VIN)" : stationId,
                         car.vin(),
                         car.batteryPercentage());
             } else {
                 log.warn(
-                        "[simulator] booking-service could not release station id={} for vin={}: {}",
-                        stationId,
+                        "[simulator] booking-service could not release for vin={} (local station id={}): {}",
                         car.vin(),
+                        stationId.isEmpty() ? "(none)" : stationId,
                         reply.getMessage());
+                car.setAssignedChargingStationId(null);
+                car.setState(CarState.DRIVING);
+                log.warn(
+                        "[simulator] Cleared local CHARGING state for vin={} after release failure (drift recovery)",
+                        car.vin());
             }
         } catch (Exception e) {
             log.error(
                     "[simulator] gRPC release failed for vin={} station={}: {}",
                     car.vin(),
-                    stationId,
+                    stationId.isEmpty() ? "(none)" : stationId,
                     e.getMessage());
+            car.setAssignedChargingStationId(null);
+            car.setState(CarState.DRIVING);
+            log.warn(
+                    "[simulator] Cleared local CHARGING state for vin={} after gRPC error (drift recovery)",
+                    car.vin());
         }
     }
 }

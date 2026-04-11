@@ -90,6 +90,26 @@ public class StationBooker {
     }
 
     /**
+     * Frees whichever station is booked for this VIN (ignores station id). Use when the client’s id may be stale.
+     */
+    @Transactional
+    public boolean releaseStationForVin(String vin) {
+        Optional<ChargingStation> locked =
+                stations.findFirstByAssignedVinAndStateOrderByIdAsc(vin, StationState.BOOKED);
+        if (locked.isEmpty()) {
+            bookingMetrics.releaseFailure("no_booking_for_vin");
+            return false;
+        }
+        ChargingStation station = locked.get();
+        station.setState(StationState.FREE);
+        station.setAssignedVin(null);
+        stations.save(station);
+        eventsPublisher.publishStationStatus(station);
+        bookingMetrics.releaseSuccess(station);
+        return true;
+    }
+
+    /**
      * Startup safety reset:
      * if simulator cars restart from fresh in-memory state, persisted BOOKED rows become stale.
      * We clear every assignment so the system starts from a consistent baseline.

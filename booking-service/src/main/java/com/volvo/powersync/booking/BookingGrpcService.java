@@ -59,15 +59,21 @@ public class BookingGrpcService extends ChargingBookingGrpc.ChargingBookingImplB
         String stationId = request.getChargingStationId();
         log.info("Release request for car {} station {}", vin, stationId);
 
-        boolean ok = stationBooker.releaseStation(vin, stationId);
+        boolean ok = false;
+        if (stationId != null && !stationId.isBlank()) {
+            ok = stationBooker.releaseStation(vin, stationId);
+        }
+        if (!ok) {
+            ok = stationBooker.releaseStationForVin(vin);
+        }
         ReleaseChargingReply reply = ReleaseChargingReply.newBuilder()
                 .setSuccess(ok)
-                .setMessage(ok ? "Released" : "Could not release (not found, not booked, or VIN mismatch)")
+                .setMessage(ok ? "Released" : "Could not release (no BOOKED row for this VIN)")
                 .build();
         if (ok) {
-            log.info("Released station {} for car {}", stationId, vin);
+            log.info("Released booking for car {}", vin);
         } else {
-            log.warn("Release failed for car {} station {}", vin, stationId);
+            log.warn("Release failed for car {} (tried station id then VIN lookup)", vin);
         }
         responseObserver.onNext(reply);
         responseObserver.onCompleted();

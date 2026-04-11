@@ -69,16 +69,23 @@ public final class Car {
         lowBatteryBookingAttempted = false;
     }
 
-    /** One simulation step: battery up/down depends on {@link #state()}. */
-    public void applyBatteryTick() {
+    /**
+     * One simulation step: battery up/down depends on {@link #state()}.
+     *
+     * @param drivingDrainPercent how many percent to drop while {@link CarState#DRIVING} (scheduler may pick 2 or 4 at random per tick)
+     * @param chargingGainPercent how many percent to add while {@link CarState#CHARGING}
+     */
+    public void applyBatteryTick(int drivingDrainPercent, int chargingGainPercent) {
+        int drain = Math.max(0, drivingDrainPercent);
+        int gain = Math.max(0, chargingGainPercent);
         switch (state) {
             case DRIVING -> {
-                batteryPercentage = Math.max(0, batteryPercentage - 2);
+                batteryPercentage = Math.max(0, batteryPercentage - drain);
                 if (batteryPercentage == 0) {
                     state = CarState.STOPPED;
                 }
             }
-            case CHARGING -> batteryPercentage = Math.min(100, batteryPercentage + 2);
+            case CHARGING -> batteryPercentage = Math.min(100, batteryPercentage + gain);
             case STOPPED, WAITING_FOR_CHARGE -> {
                 // no change
             }

@@ -23,4 +23,10 @@ public interface ChargingStationRepository extends JpaRepository<ChargingStation
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from ChargingStation c where c.id = :id")
     Optional<ChargingStation> findByIdWithLock(@Param("id") Long id);
+
+    /**
+     * Finds the row this VIN holds in BOOKED state (simulator may have a stale station id after DB resets).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<ChargingStation> findFirstByAssignedVinAndStateOrderByIdAsc(String assignedVin, StationState state);
 }
