@@ -1,53 +1,60 @@
-# Volvo PowerSync Core
+# ⚡ Volvo PowerSync Core
 
-Event-driven EV charging simulator built as a multi-module Java/Spring project.
+Event-driven **EV charging** demo: a multi-module **Java / Spring Boot** stack that simulates a fleet, books chargers, and streams live status to a web dashboard.
+
+---
 
 ## Modules
 
-- `booking-api`: gRPC proto contract shared by services.
-- `booking-service`: station booking/release logic, PostgreSQL + Flyway, gRPC server + VIP REST endpoint, Kafka producer/consumer.
-- `simulator-service`: in-memory car fleet simulation, normal flow via gRPC, VIP flow via Kafka, car status Kafka publisher.
-- `notification-service`: consumes Kafka events and pushes live updates to frontend via SSE.
-- `frontend`: static dashboard + VIP driver chooser page.
+| Module | Role |
+|--------|------|
+| `booking-api` | gRPC **proto** contract shared by services |
+| `booking-service` | Station book/release, **PostgreSQL** + **Flyway**, **gRPC** server + VIP **REST**, **Kafka** in/out |
+| `simulator-service` | In-memory **car fleet**, normal flow via **gRPC**, VIP flow via **Kafka**, publishes car telemetry |
+| `notification-service` | Consumes **Kafka**, pushes live updates to the UI via **SSE** |
+| `frontend` | Static **dashboard** + VIP driver chooser |
 
-## High-Level Flow
+---
 
-- Normal cars auto-book a normal station when battery is low (`<= 20%`).
-- VIP cars (`EC40`/`ES90`) are manually booked from frontend.
-- VIP booking uses Kafka between services:
-  - booking publishes VIP booked event
-  - simulator starts charging selected VIP car
-  - simulator publishes VIP charging completed event at `>= 80%`
-  - booking releases station
-- Notification service streams live station and car updates to the frontend via SSE.
+## High-level flow
 
-## Tech Stack
+- **Normal cars** — When battery is low (`≤ 20%`), the simulator books a **normal** station over **gRPC**; when charged (`≥ 80%`), it releases the slot (with **VIN-based** release if ids drift).
+- **VIP cars** (`EC40` / `ES90`) — Booked manually from the **frontend**; flow is **Kafka**-mediated:
+  - Booking publishes **VIP booked** → simulator starts charging that car  
+  - At charge target, simulator publishes **VIP charging completed** → booking frees the VIP station  
+- **Live UI** — **Notification** service streams station + car updates to the browser via **SSE** (fed by Kafka from simulator & booking).
 
-- Java 21, Spring Boot 3
+---
+
+## Tech stack
+
+- Java **21**, Spring Boot **3**
 - Maven multi-module build
-- PostgreSQL 16
+- PostgreSQL **16**
 - Flyway migrations
-- gRPC (booking-service <-> simulator-service for normal flow)
-- Kafka (KRaft mode)
-- SSE for live UI updates
+- **gRPC** (booking ↔ simulator, normal charging flow)
+- **Apache Kafka**
+- **SSE** (live dashboard updates)
+
+---
 
 ## Prerequisites
 
-- JDK 21+
-- Maven 3.9+
-- Docker + Docker Compose
+- **JDK 21+**
+- **Maven 3.9+**
+- **Docker** + **Docker Compose**
 
-## Run Locally
+---
 
-From repository root:
+## Run locally
 
-1) Start infra:
+**1.** Start infra (Postgres + Kafka):
 
 ```bash
 docker compose up -d
 ```
 
-2) Start services (separate terminals):
+**2.** Start each service in its own terminal (from repo root):
 
 ```bash
 mvn -pl booking-service -am spring-boot:run -DskipTests
@@ -61,56 +68,55 @@ mvn -pl simulator-service -am spring-boot:run -DskipTests
 mvn -pl notification-service -am spring-boot:run -DskipTests
 ```
 
-3) Run frontend:
+**3.** Serve the frontend:
 
 ```bash
 cd frontend
 python3 -m http.server 5173
 ```
 
-Open:
+**4.** Open in the browser:
 
-- Driver chooser: [http://localhost:5173/choose-driver.html](http://localhost:5173/choose-driver.html)
-- Dashboard: [http://localhost:5173/index.html](http://localhost:5173/index.html)
+| Page | URL |
+|------|-----|
+| Driver chooser | [http://localhost:5173/choose-driver.html](http://localhost:5173/choose-driver.html) |
+| Dashboard | [http://localhost:5173/index.html](http://localhost:5173/index.html) |
 
-## Default Ports
+---
 
-- Booking REST: `8081`
-- Booking gRPC: `9090`
-- Simulator REST: `8080`
-- Notification REST/SSE: `8082`
-- PostgreSQL: `5432`
-- Kafka: `9092`
+## Default ports
 
-## Key Frontend Endpoints
+| Service | Port |
+|---------|------|
+| Booking REST | **8081** |
+| Booking gRPC | **9090** |
+| Simulator REST | **8080** |
+| Notification REST / SSE | **8082** |
+| PostgreSQL | **5432** |
+| Kafka | **9092** |
 
-- Station snapshot: `GET /api/stations-status`
-- Station SSE: `GET /api/stations-status/stream` (event: `station-status`)
-- Car snapshot: `GET /api/cars-status`
-- Car SSE: `GET /api/cars-status/stream` (event: `car-status`)
+---
 
-## Kafka Topics
+## Key notification API (frontend)
 
-- `vip-booked-events`
-  - Purpose: notifies simulator that VIP booking succeeded.
-  - Producer: `booking-service`
-  - Consumer: `simulator-service`
-  - Payload: VIP booking event with `vin`, `chargingStationId`, `timestampMs`.
+Used for live dashboard data (paths on **notification-service**):
 
-- `vip-charging-completed-events`
-  - Purpose: notifies booking service that VIP car reached charge target and should release station.
-  - Producer: `simulator-service`
-  - Consumer: `booking-service`
-  - Payload: VIP charging completion event with `vin`, `chargingStationId`, `timestampMs`.
+| | Endpoint |
+|--|----------|
+| Station snapshot | `GET /api/stations-status` |
+| Station live stream | `GET /api/stations-status/stream` · event: `station-status` |
+| Car snapshot | `GET /api/cars-status` |
+| Car live stream | `GET /api/cars-status/stream` · event: `car-status` |
 
-- `station-status-events`
-  - Purpose: broadcasts station state changes for live UI updates.
-  - Producer: `booking-service`
-  - Consumer: `notification-service`
-  - Payload: station status event with `stationId`, `stationName`, `stationType`, `status`, `assignedVin`, `timestampMs`.
+The UI also calls **simulator** `GET /api/cars` for fleet metadata and **booking** `POST /api/vip-stations/book` for VIP booking.
 
-- `car-status-events`
-  - Purpose: streams live car telemetry each simulator tick.
-  - Producer: `simulator-service`
-  - Consumer: `notification-service`
-  - Payload: car status event with `vin`, `batteryPercentage`, `status`, `assignedChargingStationId`, `vipEligible`, `timestampMs`.
+---
+
+## Kafka topics
+
+| Topic | Role | Producer → Consumer | Payload (JSON) |
+|-------|------|---------------------|----------------|
+| `vip-booked-events` | VIP slot reserved | **booking** → **simulator** | `vin`, `chargingStationId`, `timestampMs` |
+| `vip-charging-completed-events` | VIP finished charging | **simulator** → **booking** | `vin`, `chargingStationId`, `timestampMs` |
+| `station-status-events` | Charger row updates | **booking** → **notification** | `stationId`, `stationName`, `stationType`, `status`, `assignedVin`, `timestampMs` |
+| `car-status-events` | Fleet telemetry each tick | **simulator** → **notification** | `vin`, `batteryPercentage`, `status`, `assignedChargingStationId`, `vipEligible`, `timestampMs` |
