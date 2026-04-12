@@ -14,7 +14,7 @@ Deployment on the Pi cluster (Kubernetes, tunnel, images, and related ops) is do
 
 Below you can see a diagram of the system architecture.
 
-(./volvo-powersync-diagram.png)
+![System architecture diagram](./volvo-powersync-diagram.png)
 
 ---
 
