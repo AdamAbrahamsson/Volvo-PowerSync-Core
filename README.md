@@ -10,6 +10,14 @@ Deployment on the Pi cluster (Kubernetes, tunnel, images, and related ops) is do
 
 ---
 
+## System overview
+
+Below you can see a diagram of the system architecture.
+
+The browser talks to **booking** for VIP actions, to **notification** for live car/station streams (REST + SSE), and to **simulator** only for static fleet metadata. Normal charging uses **gRPC** between simulator and booking; **Kafka** carries VIP hand-offs, station updates, and car telemetry—see [Kafka topics](#kafka-topics) below.
+
+---
+
 ## Modules
 
 | Module | Role |
