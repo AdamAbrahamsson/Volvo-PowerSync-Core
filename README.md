@@ -2,6 +2,12 @@
 
 Event-driven **EV charging** demo: a multi-module **Java / Spring Boot** stack that simulates a fleet, books chargers, and streams live status to a web dashboard.
 
+### Hosted demo
+
+A public instance may be available at **[powersync.adamcloud.dev](https://powersync.adamcloud.dev/)** when the deployment is running. It is backed by a **Raspberry Pi 5** that is **not always on**—if the site is down, ask the **repository owner** to power the hardware on and start the stack.
+
+Deployment (Kubernetes, tunnel, images) is documented in the companion repo **[Volvo-PowerSync-Infra-Pi5](https://github.com/adamabrahamsson/Volvo-PowerSync-Infra-Pi5)**
+
 ---
 
 ## Modules
