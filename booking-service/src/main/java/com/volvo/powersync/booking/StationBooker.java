@@ -41,7 +41,6 @@ public class StationBooker {
                 stations.findTop1ByStateAndStationTypeOrderByIdAsc(StationState.FREE, stationType);
 
         if (freeStations.isEmpty()) {
-            bookingMetrics.bookingFailure(stationType, "no_free_station");
             return null;
         }
 
@@ -64,28 +63,23 @@ public class StationBooker {
         try {
             id = Long.parseLong(stationIdText);
         } catch (NumberFormatException e) {
-            bookingMetrics.releaseFailure("invalid_station_id");
             return false;
         }
         Optional<ChargingStation> locked = stations.findByIdWithLock(id);
         if (locked.isEmpty()) {
-            bookingMetrics.releaseFailure("not_found");
             return false;
         }
         ChargingStation station = locked.get();
         if (station.getState() != StationState.BOOKED) {
-            bookingMetrics.releaseFailure("not_booked");
             return false;
         }
         if (station.getAssignedVin() == null || !station.getAssignedVin().equals(vin)) {
-            bookingMetrics.releaseFailure("vin_mismatch");
             return false;
         }
         station.setState(StationState.FREE);
         station.setAssignedVin(null);
         stations.save(station);
         eventsPublisher.publishStationStatus(station);
-        bookingMetrics.releaseSuccess(station);
         return true;
     }
 
@@ -97,7 +91,6 @@ public class StationBooker {
         Optional<ChargingStation> locked =
                 stations.findFirstByAssignedVinAndStateOrderByIdAsc(vin, StationState.BOOKED);
         if (locked.isEmpty()) {
-            bookingMetrics.releaseFailure("no_booking_for_vin");
             return false;
         }
         ChargingStation station = locked.get();
@@ -105,7 +98,6 @@ public class StationBooker {
         station.setAssignedVin(null);
         stations.save(station);
         eventsPublisher.publishStationStatus(station);
-        bookingMetrics.releaseSuccess(station);
         return true;
     }
 
@@ -122,7 +114,6 @@ public class StationBooker {
             station.setAssignedVin(null);
             stations.save(station);
             eventsPublisher.publishStationStatus(station);
-            bookingMetrics.stationStateSync(station);
         }
     }
 }
