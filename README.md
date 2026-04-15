@@ -16,7 +16,9 @@ Below you can see a diagram of the system architecture.
 
 ![System architecture diagram](./volvo-powersync-diagram.png)
 
-Here is a youtube video: https://www.youtube.com/watch?v=MZuEmJzKAv4
+## Youtube Video 
+
+To view the final product, here is the youtube video: https://www.youtube.com/watch?v=MZuEmJzKAv4
 
 ---
 
