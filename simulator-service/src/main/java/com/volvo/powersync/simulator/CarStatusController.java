@@ -1,14 +1,10 @@
 package com.volvo.powersync.simulator;
 
 import java.util.List;
-import java.util.Map;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/cars")
@@ -33,35 +29,9 @@ public class CarStatusController {
                 .toList();
     }
 
-    @GetMapping("/{vin}")
-    public CarDetailsResponse getCar(@PathVariable String vin) {
-        Map<String, Car> carsByFleetKey = fleet.allCarsByFleetKey();
-        for (Map.Entry<String, Car> entry : carsByFleetKey.entrySet()) {
-            Car car = entry.getValue();
-            if (car.vin().equals(vin)) {
-                return new CarDetailsResponse(
-                        car.vin(),
-                        fleetKeyToLabel(entry.getKey()),
-                        car.batteryPercentage(),
-                        car.state().name(),
-                        car.assignedChargingStationId(),
-                        car.vipEligible());
-            }
-        }
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Car not found: " + vin);
-    }
-
     private String fleetKeyToLabel(String fleetKey) {
         return fleetKey == null ? "UNKNOWN" : fleetKey.toUpperCase();
     }
 
     public record CarSummaryResponse(String vin, String name, boolean vipEligible) {}
-
-    public record CarDetailsResponse(
-            String vin,
-            String name,
-            int batteryPercentage,
-            String status,
-            String assignedChargingStationId,
-            boolean vipEligible) {}
 }

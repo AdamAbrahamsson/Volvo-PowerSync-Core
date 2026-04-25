@@ -80,7 +80,7 @@ public final class Car {
                 }
             }
             case CHARGING -> batteryPercentage = Math.min(100, batteryPercentage + gain);
-            case STOPPED, WAITING_FOR_CHARGE -> {
+            case STOPPED -> {
                 // no change
             }
         }

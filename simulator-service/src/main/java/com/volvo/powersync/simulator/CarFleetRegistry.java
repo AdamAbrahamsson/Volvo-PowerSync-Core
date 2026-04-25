@@ -30,10 +30,6 @@ public class CarFleetRegistry {
         }
     }
 
-    public Optional<Car> findByFleetKey(String fleetKey) {
-        return Optional.ofNullable(carsByFleetKey.get(fleetKey));
-    }
-
     public Optional<Car> findByVin(String vin) {
         synchronized (carsByFleetKey) {
             for (Car car : carsByFleetKey.values()) {
