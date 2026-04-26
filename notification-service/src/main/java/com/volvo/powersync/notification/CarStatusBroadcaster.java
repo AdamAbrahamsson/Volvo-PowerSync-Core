@@ -1,5 +1,6 @@
 package com.volvo.powersync.notification;
 
+import com.volvo.powersync.events.CarStatusEvent;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

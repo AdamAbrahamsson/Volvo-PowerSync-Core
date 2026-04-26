@@ -17,11 +17,11 @@ public class VipBookingController {
     private static final Set<String> VIP_ELIGIBLE_VINS = Set.of("7070", "8080");
 
     private final StationBooker stationBooker;
-    private final VipBookingEventsPublisher vipBookingEventsPublisher;
+    private final BookingEventsPublisher bookingEventsPublisher;
 
-    public VipBookingController(StationBooker stationBooker, VipBookingEventsPublisher vipBookingEventsPublisher) {
+    public VipBookingController(StationBooker stationBooker, BookingEventsPublisher bookingEventsPublisher) {
         this.stationBooker = stationBooker;
-        this.vipBookingEventsPublisher = vipBookingEventsPublisher;
+        this.bookingEventsPublisher = bookingEventsPublisher;
     }
 
     @PostMapping("/book")
@@ -33,7 +33,7 @@ public class VipBookingController {
         if (stationId == null) {
             return new VipBookReply(false, "", "VIP station is already booked");
         }
-        vipBookingEventsPublisher.publishVipBooked(vin, stationId);
+        bookingEventsPublisher.publishVipBooked(vin, stationId);
         return new VipBookReply(true, stationId, "VIP station booked");
     }
 

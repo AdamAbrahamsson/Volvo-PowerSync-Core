@@ -13,12 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class StationBooker {
 
     private final ChargingStationRepository stations;
-    private final VipBookingEventsPublisher eventsPublisher;
+    private final BookingEventsPublisher eventsPublisher;
     private final BookingMetrics bookingMetrics;
 
     public StationBooker(
             ChargingStationRepository stations,
-            VipBookingEventsPublisher eventsPublisher,
+            BookingEventsPublisher eventsPublisher,
             BookingMetrics bookingMetrics) {
         this.stations = stations;
         this.eventsPublisher = eventsPublisher;

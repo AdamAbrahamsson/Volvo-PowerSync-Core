@@ -1,4 +1,4 @@
-package com.volvo.powersync.notification;
+package com.volvo.powersync.events;
 
 public record StationStatusEvent(
         String stationId,

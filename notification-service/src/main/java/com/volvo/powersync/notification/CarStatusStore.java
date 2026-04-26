@@ -1,5 +1,6 @@
 package com.volvo.powersync.notification;
 
+import com.volvo.powersync.events.CarStatusEvent;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;

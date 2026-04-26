@@ -1,5 +1,6 @@
 package com.volvo.powersync.notification;
 
+import com.volvo.powersync.events.StationStatusEvent;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -7,7 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Component
-public class VipStationStatusBroadcaster {
+public class StationStatusBroadcaster {
 
     private final List<SseEmitter> emitters = new CopyOnWriteArrayList<>();
 

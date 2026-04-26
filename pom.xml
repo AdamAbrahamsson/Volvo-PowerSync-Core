@@ -19,6 +19,7 @@
 
     <modules>
         <module>booking-api</module>
+        <module>event-contracts</module>
         <module>booking-service</module>
         <module>notification-service</module>
         <module>simulator-service</module>

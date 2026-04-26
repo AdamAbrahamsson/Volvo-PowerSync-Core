@@ -76,7 +76,6 @@ public class BatterySimulationScheduler {
             car.clearLowBatteryBookingAttempted();
             return;
         }
-        // STOPPED at 0% still needs a charger; only skip non-road states that are not "stranded".
         if ((car.state() != CarState.DRIVING && car.state() != CarState.STOPPED)
                 || car.assignedChargingStationId() != null) {
             return;

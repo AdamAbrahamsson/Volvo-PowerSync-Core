@@ -2,11 +2,13 @@ package com.volvo.powersync.booking;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.volvo.powersync.events.StationStatusEvent;
+import com.volvo.powersync.events.VipBookedEvent;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
-public class VipBookingEventsPublisher {
+public class BookingEventsPublisher {
 
     static final String VIP_BOOKED_TOPIC = "vip-booked-events";
     static final String STATION_STATUS_TOPIC = "station-status-events";
@@ -14,7 +16,7 @@ public class VipBookingEventsPublisher {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    public VipBookingEventsPublisher(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
+    public BookingEventsPublisher(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
     }

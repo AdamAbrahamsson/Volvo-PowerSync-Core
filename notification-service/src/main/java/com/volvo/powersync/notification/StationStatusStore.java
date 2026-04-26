@@ -1,5 +1,6 @@
 package com.volvo.powersync.notification;
 
+import com.volvo.powersync.events.StationStatusEvent;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -9,7 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.stereotype.Component;
 
 @Component
-public class VipStationStatusStore {
+public class StationStatusStore {
 
     private final AtomicReference<Map<String, StationStatusEvent>> current =
             new AtomicReference<>(new LinkedHashMap<>());

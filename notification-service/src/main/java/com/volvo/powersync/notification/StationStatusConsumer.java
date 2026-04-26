@@ -2,24 +2,23 @@ package com.volvo.powersync.notification;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.volvo.powersync.events.StationStatusEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 @Service
-public class VipStationStatusConsumer {
+public class StationStatusConsumer {
 
-    private static final Logger log = LoggerFactory.getLogger(VipStationStatusConsumer.class);
+    private static final Logger log = LoggerFactory.getLogger(StationStatusConsumer.class);
 
     private final ObjectMapper objectMapper;
-    private final VipStationStatusStore store;
-    private final VipStationStatusBroadcaster broadcaster;
+    private final StationStatusStore store;
+    private final StationStatusBroadcaster broadcaster;
 
-    public VipStationStatusConsumer(
-            ObjectMapper objectMapper,
-            VipStationStatusStore store,
-            VipStationStatusBroadcaster broadcaster) {
+    public StationStatusConsumer(
+            ObjectMapper objectMapper, StationStatusStore store, StationStatusBroadcaster broadcaster) {
         this.objectMapper = objectMapper;
         this.store = store;
         this.broadcaster = broadcaster;
